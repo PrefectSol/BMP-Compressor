@@ -1,11 +1,14 @@
-### BMP Compressor - 8 bit indexed images
+# BMP Compressor - 8 bit indexed images
 
 ## Run
 
 ```bash
 git clone https://github.com/PrefectSol/BMP-Compressor.git
+
 cd BMP-Compressor
+
 make
+
 ./output/main <input.bmp> <output.bmp>
 ```
 
