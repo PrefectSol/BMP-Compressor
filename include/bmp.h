@@ -1,6 +1,9 @@
 #ifndef BMP_H
 #define BMP_H
 
+#define BI_RGB  0
+#define BI_RLE8 1
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,6 +50,8 @@ enum result_code
     no_action,
 
     cannot_open_bmp,
+
+    incorrect_file_type,
 
     free_not_required,
 

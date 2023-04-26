@@ -3,13 +3,14 @@
 bmp_header m_header;
 
 uint8_t *m_data = NULL;
-
 uint8_t *m_palette = NULL;
 
 enum result_code m_status = no_action;
 
 void bmp_read(const char *input)
 {
+    const unsigned int bmp_filetype = 0x4D42;
+
     m_status = no_action;
 
     FILE *file = fopen(input, "rb");
@@ -21,9 +22,22 @@ void bmp_read(const char *input)
     }
 
     fread(&m_header, sizeof(m_header), 1, file);
+    if (m_header.file_type != bmp_filetype)
+    {
+        m_status = incorrect_file_type;
 
-    m_palette = malloc(m_header.colors_used * m_header.bit_count / 2);
-    fread(m_palette, sizeof(uint8_t), m_header.colors_used * m_header.bit_count / 2, file);
+        return;
+    }
+
+    m_palette = malloc(m_header.colors_used);
+    if (m_palette == NULL)
+    {
+        m_status = memory_allocation_error;
+
+        return;
+    }
+
+    fread(m_palette, sizeof(uint8_t), m_header.colors_used, file);
 
     m_data = malloc(m_header.size_image);
     if (m_data == NULL)
@@ -53,7 +67,7 @@ void bmp_write(const char *output)
     }
 
     fwrite(&m_header, sizeof(m_header), 1, file);
-    fwrite(m_palette, sizeof(uint8_t), m_header.colors_used * m_header.bit_count / 2, file);
+    fwrite(m_palette, sizeof(uint8_t), m_header.colors_used, file);
     fwrite(m_data, m_header.size_image, 1, file);
 
     fclose(file);
@@ -63,25 +77,35 @@ void bmp_write(const char *output)
 
 void bmp_8bit_indexed_compress()
 {
-    const int compressed_factor = 2;
-
-    int compressed_size = 0;
     uint8_t *compressed_data = malloc(m_header.size_image);
+    uint8_t *comp_data_ptr = compressed_data;
 
-    for (int y = 0; y < m_header.height; y++)
+    for (int row = 0; row < m_header.height; row++)
     {
-        for (int x = 0; x < m_header.width; x++)
-        {
-            const uint8_t compress_pixel = m_data[y * m_header.width + x] / compressed_factor;
+        uint8_t *row_ptr = &m_data[row * m_header.width];
+        const uint8_t *row_end = row_ptr + m_header.width;
 
-            compressed_data[compressed_size++] = compress_pixel;
+        while (row_ptr < row_end)
+        {
+            uint8_t pixel = *row_ptr++;
+            unsigned int count = 1;
+
+            while (row_ptr < row_end && *row_ptr == pixel && count < 255)
+            {
+                count++;
+                row_ptr++;
+            }
+
+            *comp_data_ptr++ = count;
+            *comp_data_ptr++ = pixel;
         }
     }
 
-    free(m_data);
+    m_header.compression = BI_RLE8;
+    m_header.size_image = comp_data_ptr - compressed_data;
 
+    free(m_data);
     m_data = compressed_data;
-    m_header.size_image = compressed_size;
 
     m_status = success;
 }
@@ -90,7 +114,7 @@ void bmp_compress()
 {
     m_status = no_action;
 
-    if (m_header.compression != 0)
+    if (m_header.compression != BI_RGB)
     {
         m_status = already_compressed;
 

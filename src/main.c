@@ -34,7 +34,7 @@ int encode(const char *input, const char *output)
         return m_status;
     }
 
-    printf("success: %d", m_status);
+    printf("completed: %d", m_status);
 
     return 0;
 }
@@ -50,3 +50,5 @@ int main(int argc, const char **argv)
         
     return 1;
 }
+
+ 
