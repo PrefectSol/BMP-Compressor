@@ -75,22 +75,22 @@ void bmp_write(const char *output)
     m_status = success;
 }
 
-void bmp_8bit_indexed_compress()
+void bmp_indexed_compress(unsigned int byteSize, uint32_t compression)
 {
     uint8_t *compressed_data = malloc(m_header.size_image);
     uint8_t *comp_data_ptr = compressed_data;
 
     for (int row = 0; row < m_header.height; row++)
     {
-        uint8_t *row_ptr = &m_data[row * m_header.width];
+        uint8_t *row_ptr = m_data + row * m_header.width;
         const uint8_t *row_end = row_ptr + m_header.width;
 
         while (row_ptr < row_end)
         {
-            uint8_t pixel = *row_ptr++;
             unsigned int count = 1;
+            const uint8_t pixel = *row_ptr++;
 
-            while (row_ptr < row_end && *row_ptr == pixel && count < 255)
+            while (row_ptr < row_end && *row_ptr == pixel && count < byteSize)
             {
                 count++;
                 row_ptr++;
@@ -101,7 +101,7 @@ void bmp_8bit_indexed_compress()
         }
     }
 
-    m_header.compression = BI_RLE8;
+    m_header.compression = compression;
     m_header.size_image = comp_data_ptr - compressed_data;
 
     free(m_data);
@@ -123,7 +123,11 @@ void bmp_compress()
     
     if (m_header.bit_count == 8)
     {
-        bmp_8bit_indexed_compress();
+        bmp_indexed_compress(255, BI_RLE8);
+    }
+    else if (m_header.bit_count == 4)
+    {
+        bmp_indexed_compress(128, BI_RLE4);
     }
     else
     {

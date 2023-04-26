@@ -1,4 +1,4 @@
-# BMP Compressor - 8 bit indexed images
+# BMP Compressor - 4/8 bit indexed images
 
 ## Run
 
